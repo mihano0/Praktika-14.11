@@ -1,0 +1,94 @@
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+using namespace std;
+
+// Параметры
+const int POP_SIZE = 20;    // Размер популяции
+const int GEN_COUNT = 50;   // Количество поколений
+const int CHROM_LEN = 8;    // Длина хромосомы
+
+// Функция для оптимизации
+double fitness(double x) {
+    return -(x-5)*(x-5) + 25;
+}
+
+// Структура для хранения особи
+struct Individual {
+    vector<int> chromosome;  // Бинарная строка
+    double value;           // Декодированное значение
+    double score;           // Оценка
+    
+    Individual() {
+        chromosome.resize(CHROM_LEN);
+        for(int i = 0; i < CHROM_LEN; i++) {
+            chromosome[i] = rand() % 2;  // Случайный 0 или 1
+        }
+        decode();
+    }
+    
+    void decode() {
+        int bin_val = 0;
+        for(int i = 0; i < CHROM_LEN; i++) {
+            bin_val = bin_val * 2 + chromosome[i];
+        }
+        value = bin_val / (double)(1 << CHROM_LEN) * 10;  // Декодирование в [0,10]
+        score = fitness(value);
+    }
+};
+
+// Функция кроссовера
+void crossover(Individual &p1, Individual &p2) {
+    int point = rand() % CHROM_LEN;
+    for(int i = point; i < CHROM_LEN; i++) {
+        swap(p1.chromosome[i], p2.chromosome[i]);
+    }
+    p1.decode();
+    p2.decode();
+}
+
+// Функция мутации
+void mutate(Individual &ind) {
+    for(int i = 0; i < CHROM_LEN; i++) {
+        if(rand() % 10 == 0) {  // Вероятность 10%
+            ind.chromosome[i] = 1 - ind.chromosome[i];
+        }
+    }
+    ind.decode();
+}
+
+int main() {
+    srand(time(0));
+    
+    // Создаем начальную популяцию
+    vector<Individual> population(POP_SIZE);
+    
+    for(int gen = 0; gen < GEN_COUNT; gen++) {
+        // Создаем новое поколение
+        for(int i = 0; i < POP_SIZE/2; i++) {
+            Individual p1 = population[rand() % POP_SIZE];
+            Individual p2 = population[rand() % POP_SIZE];
+            
+            crossover(p1, p2);
+            mutate(p1);
+            mutate(p2);
+            
+            population[i*2] = p1;
+            population[i*2+1] = p2;
+        }
+    }
+    
+    // Находим лучшее решение
+    Individual best = population[0];
+    for(Individual ind : population) {
+        if(ind.score > best.score) {
+            best = ind;
+        }
+    }
+    
+    cout << "Лучшее решение: x = " << best.value << endl;
+    cout << "Значение функции: " << best.score << endl;
+    
+    return 0;
+}
